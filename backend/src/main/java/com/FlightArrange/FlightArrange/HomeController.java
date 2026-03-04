@@ -1,21 +1,22 @@
 package com.FlightArrange.FlightArrange;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.FlightArrange.FlightArrange.model.Flight;
+import com.FlightArrange.FlightArrange.repository.FlightRepo;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.util.List;
 
 @RestController
 public class HomeController {
-    
-    @GetMapping("/api/home")
-    public String home() {
-        return "Backend connected!";
+
+    private final FlightRepo flightRepo;
+
+    public HomeController(FlightRepo flightRepo) {
+        this.flightRepo = flightRepo;
     }
 
     @GetMapping("/api/flights")
-    public Map<String, String> getFlightInfo() {
-       System.out.println("Inside getFlightInfo");
-        return Map.of("flightInfo", "Flight 101 from LA to New York at 10:00AM");
+    public List<Flight> getFlights() {
+        return flightRepo.findAll();
     }
 }
