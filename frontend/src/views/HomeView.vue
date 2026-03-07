@@ -1,7 +1,11 @@
 <template>
   <div class="container">
     <h1>Welcome to Flight Arrange</h1>
-    <button @click="getFlightInfo">Retrieve Flight Info</button>
+    <button @click="getFlightInfo">Get DB Flights</button>
+    <button @click="getLiveFlightInfo">Get Live Flights</button>
+    <router-link to="/live-flights">
+      <button>Go to Flight Search</button>
+    </router-link>
     <p v-if="flightInfo">{{ flightInfo }}</p>
   </div>
 </template>
@@ -17,7 +21,13 @@ export default {
     async getFlightInfo() {
       const response = await fetch('/api/flights')
       const data = await response.json()
-      this.flightInfo = data.flightInfo
+      this.flightInfo = JSON.stringify(data, null, 2)  
+    },
+
+    async getLiveFlightInfo() {
+      const response = await fetch('/api/liveFlights?dep=LAX&arr=JFK')
+      const data = await response.json()
+      this.flightInfo = JSON.stringify(data.data, null, 2)
     }
   }
 }
