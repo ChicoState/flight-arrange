@@ -1,32 +1,40 @@
 package com.FlightArrange.FlightArrange;
 
-import com.FlightArrange.FlightArrange.model.Flight;
-import com.FlightArrange.FlightArrange.repository.FlightRepo;
-import org.springframework.web.bind.annotation.*;
+import com.FlightArrange.FlightArrange.model.FlightReliability;
+import com.FlightArrange.FlightArrange.repository.FlightReliabilityRepo;
 import com.FlightArrange.FlightArrange.service.AviationStackService;
+import com.FlightArrange.FlightArrange.service.FlightScoreService;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 public class HomeController {
 
-    private final FlightRepo flightRepo;
-    private final AviationStackService aviationStackService;  
+    private final FlightReliabilityRepo flightReliabilityRepo;
+    private final AviationStackService aviationStackService;
+    private final FlightScoreService flightScoreService;
 
-    public HomeController(FlightRepo flightRepo, AviationStackService aviationStackService) {  
-        this.flightRepo = flightRepo;
-        this.aviationStackService = aviationStackService;  
+    public HomeController(FlightReliabilityRepo flightReliabilityRepo,
+                          AviationStackService aviationStackService,
+                          FlightScoreService flightScoreService) {
+        this.flightReliabilityRepo = flightReliabilityRepo;
+        this.aviationStackService  = aviationStackService;
+        this.flightScoreService    = flightScoreService;
     }
 
+    // Returns all historical BTS data
     @GetMapping("/api/flights")
-    public List<Flight> getFlights() {
-        return flightRepo.findAll();
+    public List<FlightReliability> getFlights() {
+        return flightReliabilityRepo.findAll();
     }
 
+    // Returns live flights enriched with price, on-time rate and score
     @GetMapping("/api/liveFlights")
     public String getLiveFlights(
             @RequestParam(defaultValue = "LAX") String dep,
             @RequestParam(defaultValue = "JFK") String arr) {
-        return aviationStackService.getFlights(dep, arr);
+        String rawFlights = aviationStackService.getFlights(dep, arr);
+        return flightScoreService.scoreFlight(rawFlights);
     }
 }

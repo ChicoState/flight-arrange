@@ -27,8 +27,7 @@ export default {
     async getLiveFlightInfo() {
       const response = await fetch('/api/liveFlights?dep=LAX&arr=JFK')
       const data = await response.json()
-      this.flightInfo = JSON.stringify(data.data, null, 2)
-    }
+      this.flightInfo = JSON.stringify(data, null, 2)    }
   }
 }
 </script> 

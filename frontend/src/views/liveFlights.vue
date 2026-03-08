@@ -19,10 +19,12 @@
     <!-- Results -->
     <ul v-if="flights.length">
       <li v-for="(flight, index) in flights" :key="index">
-        <strong>{{ flight.airline.name }}</strong> {{ flight.flight.iata }} |
-        {{ flight.departure.iata }} → {{ flight.arrival.iata }} |
-        Departs: {{ flight.departure.scheduled }} |
-        Status: {{ flight.flight_status }}
+        <strong>{{ flight.airline }}</strong> {{ flight.flight }} |
+        {{ flight.departure }} → {{ flight.arrival }} |
+        Departs: {{ flight.departureTime }} |
+        Price: ${{ flight.price }} |
+        On-Time: {{ (flight.onTimeRate * 100).toFixed(0) }}% |
+        Score: {{ flight.score }}
       </li>
     </ul>
 
@@ -56,8 +58,8 @@ export default {
         this.searched = true
 
         // AviationStack wraps results in a "data" array
-        if (data.data && Array.isArray(data.data)) {
-          this.flights = data.data
+        if (Array.isArray(data)) {
+          this.flights = data
         } else {
           this.flights = []
         }
