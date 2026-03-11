@@ -31,3 +31,15 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# API keys and local config
+backend/src/main/resources/application.properties
+
+# Node / Vue frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Mac system files
+.DS_Store
