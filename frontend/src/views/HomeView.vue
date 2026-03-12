@@ -4,6 +4,10 @@
     <p class="subtitle">Search and manage your flights with ease.</p>
     <button @click="handleStart">Get Started</button>
     <p v-if="message" class="message">{{ message }}</p>
+    <router-link to="/live-flights">
+      <button>Go to Flight Search</button>
+    </router-link>
+    <pre v-if="flightInfo">{{ flightInfo }}</pre>
   </div>
 </template>
 
@@ -11,13 +15,14 @@
 export default {
   data() {
     return {
-      message: null
+      message: null,
+      flightInfo:null
     }
   },
   methods: {
     handleStart() {
       this.$router.push('/planTrip/beginTrip') // switches view
-    }
+    },
   }
 }
 </script>
