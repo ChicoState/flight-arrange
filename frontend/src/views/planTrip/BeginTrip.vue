@@ -13,7 +13,7 @@
     </div>
 
     <div v-if="step === 2" class="step">
-      <h1>Who do you want to go with?</h1>
+      <h1>Who's coming with you?</h1>
 
       <div v-for="(person, i) in companions" :key="i" class="companion-card">
         <span>{{ person.name }}</span>
@@ -47,13 +47,50 @@
 
   <div class="actions">
     <button class="back" @click="step = 2">← Back</button>
-    <button :disabled="!allRated" @click="step = 4">Next →</button>
+    <button :disabled="!allRated || loading" @click="getFlightInfo">
+      <span v-if="loading">Loading...</span>
+      <span v-else>Next →</span>
+    </button>
   </div>
 </div>
 
 <div v-if="step === 4" class="step centered">
   <div class="spinner"></div>
   <p>Getting your flights...</p>
+</div>
+<div v-if="step === 5" class="step step--wide">
+  <h1>Your Flights</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Year</th>
+        <th>Month</th>
+        <th>Carrier</th>
+        <th>Carrier Name</th>
+        <th>Airport</th>
+        <th>Airport Name</th>
+        <th>Flights</th>
+        <th>Delayed</th>
+        <th>Cancelled</th>
+        <th>On-Time Rate</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="flight in parsedFlights" :key="flight.id">
+        <td>{{ flight.year }}</td>
+        <td>{{ flight.month }}</td>
+        <td>{{ flight.carrier }}</td>
+        <td>{{ flight.carrierName }}</td>
+        <td>{{ flight.airport }}</td>
+        <td>{{ flight.airportName }}</td>
+        <td>{{ flight.arrFlights }}</td>
+        <td>{{ flight.arrDel15 }}</td>
+        <td>{{ flight.arrCancelled }}</td>
+        <td>{{ (flight.onTimeRate * 100).toFixed(1) }}%</td>
+      </tr>
+    </tbody>
+  </table>
+  <button @click="step = 1">Start Over</button>
 </div>
 
     <div v-if="showModal" class="overlay" @click.self="showModal = false">
@@ -92,7 +129,9 @@ export default {
         { id: 3, label: 'Customer Service',  rating: 0, hover: 0 },
         { id: 4, label: 'Price',             rating: 0, hover: 0 },
         { id: 5, label: 'Seat Selection',    rating: 0, hover: 0 },
-      ]
+      ],
+      loading: false,
+      flightInfo: null,
     }
   },
   methods: {
@@ -101,12 +140,35 @@ export default {
       this.companions.push({ ...this.form })
       this.form = { name: '', phone: '', email: '' }
       this.showModal = false
-    }
+    },
+    async getFlightInfo() {
+      this.loading = true
+      this.step = 4;
+      const response = await fetch('/api/flights')
+      const data = await response.json()
+      this.flightInfo = data
+      this.loading = false
+      this.step = 5;
+    },
+
+    async getLiveFlightInfo() {
+    this.loading = true
+    this.step = 4;
+    const response = await fetch('/api/liveFlights?dep=LAX&arr=JFK')
+    const data = await response.json()
+    this.flightInfo = data
+    this.loading = false
+    this.step = 5;
+  }
     
   },
   computed: {
   allRated() {
     return this.topics.every(t => t.rating > 0)
+  },
+  parsedFlights() {
+    if (!this.flightInfo) return []
+    return Array.isArray(this.flightInfo) ? this.flightInfo : [this.flightInfo]
   }
 },
 }
@@ -256,6 +318,32 @@ button:disabled { background: #ccc; cursor: not-allowed; }
   border-top-color: #111;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+}
+.step table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.step th, .step td {
+  padding: 0.6rem 1rem;
+  border: 1px solid #eee;
+  text-align: left;
+}
+
+.step th {
+  background: #f9f9f9;
+  font-weight: bold;
+}
+
+.step tr:hover {
+  background: #fafafa;
+}
+
+.step--wide {
+  width: 90vw;
+  max-width: 900px;
+  align-items: center;
 }
 
 @keyframes spin {
