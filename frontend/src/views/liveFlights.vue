@@ -4,8 +4,8 @@
 
     <!-- Search Form -->
     <div class="form">
-      <input v-model="dep" placeholder="From (e.g. LAX)" />
-      <input v-model="arr" placeholder="To (e.g. JFK)" />
+      <input v-model="dep" placeholder="From (e.g. ATL)" />
+      <input v-model="arr" placeholder="To (e.g. ORD)" />
       <input v-model="maxPrice" placeholder="Max budget (e.g. 500)" type="number" />
       <select v-model="maxLayovers">
         <option value="">Any layovers</option>
@@ -16,17 +16,41 @@
       <button @click="getLiveFlights">Search Flights</button>
     </div>
 
-    <!-- Results -->
-    <ul v-if="flights.length">
-      <li v-for="(flight, index) in flights" :key="index">
-        <strong>{{ flight.airline }}</strong> {{ flight.flight }} |
-        {{ flight.departure }} → {{ flight.arrival }} |
-        Departs: {{ flight.departureTime }} |
-        Price: ${{ flight.price }} |
-        On-Time: {{ (flight.onTimeRate * 100).toFixed(0) }}% |
-        Score: {{ flight.score }}
-      </li>
-    </ul>
+    <!-- Results Table -->
+    <table v-if="flights.length">
+      <thead>
+        <tr>
+          <th>Flight</th>
+          <th>Airline</th>
+          <th>Route</th>
+          <th>Departure</th>
+          <th>Arrival</th>
+          <th>Duration</th>
+          <th>Price</th>
+          <th>On-Time</th>
+          <th>Score</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(flight, index) in filteredFlights" :key="index" class="flight-row">
+          <td>{{ flight.flight }}</td>
+          <td>{{ flight.airline }}</td>
+          <td>{{ flight.departure }} → {{ flight.arrival }}</td>
+          <td>{{ formatTime(flight.departureTime) }}</td>
+          <td>{{ formatTime(flight.arrivalTime) }}</td>
+          <td>{{ formatDuration(flight.durationMins) }}</td>
+          <td>${{ flight.price }}</td>
+          <td>{{ (flight.onTimeRate * 100).toFixed(0) }}%</td>
+          <td>
+            <span :class="scoreClass(flight.score)">{{ flight.score }}</span>
+          </td>
+          <td>
+            <button @click="selectFlight(flight)" class="select-btn">Select</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
     <p v-else-if="searched">No flights found for that route.</p>
     <p v-else>Enter your search above to find flights.</p>
@@ -50,23 +74,73 @@ export default {
       searched: false
     }
   },
+  computed: {
+    // Filter flights by maxPrice if user entered one
+    filteredFlights() {
+      if (!this.maxPrice) return this.flights
+      return this.flights.filter(f => f.price <= parseFloat(this.maxPrice))
+    }
+  },
   methods: {
     async getLiveFlights() {
       try {
         const response = await fetch(`/api/liveFlights?dep=${this.dep}&arr=${this.arr}`)
         const data = await response.json()
         this.searched = true
-
-        // AviationStack wraps results in a "data" array
-        if (Array.isArray(data)) {
-          this.flights = data
-        } else {
-          this.flights = []
-        }
+        this.flights = Array.isArray(data) ? data : []
       } catch (err) {
         console.error('Error fetching live flights:', err)
         this.flights = []
       }
+    },
+
+    // Navigate to detail page passing the selected flight as route state
+    selectFlight(flight) {
+      this.$router.push({
+        path: '/flight-detail',
+        query: {
+          flight:        flight.flight,
+          airline:       flight.airline,
+          departure:     flight.departure,
+          arrival:       flight.arrival,
+          departureTime: flight.departureTime,
+          arrivalTime:   flight.arrivalTime,
+          price:         flight.price,
+          onTimeRate:    flight.onTimeRate,
+          score:         flight.score,
+          durationMins:  flight.durationMins,
+          status:        flight.status
+        }
+      })
+    },
+
+    // Format ISO datetime to readable time
+    formatTime(isoString) {
+      if (!isoString) return 'N/A'
+      try {
+        return new Date(isoString).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZoneName: 'short'
+        })
+      } catch {
+        return isoString
+      }
+    },
+
+    // Format minutes to Xh Ym
+    formatDuration(mins) {
+      if (!mins) return 'N/A'
+      const h = Math.floor(mins / 60)
+      const m = mins % 60
+      return h > 0 ? `${h}h ${m}m` : `${m}m`
+    },
+
+    // Color code the score
+    scoreClass(score) {
+      if (score >= 0.75) return 'score-high'
+      if (score >= 0.60) return 'score-mid'
+      return 'score-low'
     }
   }
 }
@@ -106,20 +180,49 @@ button {
   cursor: pointer;
 }
 
-ul {
-  list-style: none;
-  padding: 0;
+table {
   width: 100%;
-  max-width: 700px;
+  max-width: 1000px;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
 }
 
-li {
+th {
+  background-color: #f4f4f4;
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 2px solid #ddd;
+  font-size: 0.9rem;
+}
+
+td {
   padding: 0.75rem;
   border-bottom: 1px solid #eee;
-  font-size: 1rem;
+  font-size: 0.95rem;
 }
 
+.flight-row:hover {
+  background-color: #f9f9f9;
+}
+
+.select-btn {
+  padding: 0.3rem 0.75rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.select-btn:hover {
+  background-color: #357abd;
+}
+
+.score-high { color: green; font-weight: bold; }
+.score-mid  { color: orange; font-weight: bold; }
+.score-low  { color: red; font-weight: bold; }
+
 .back-btn {
-  margin-top: 2rem;
+  margin-top: 1rem;
 }
 </style>
