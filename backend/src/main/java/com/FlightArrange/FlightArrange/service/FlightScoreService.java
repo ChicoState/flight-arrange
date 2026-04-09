@@ -17,7 +17,6 @@ public class FlightScoreService {
     private final SkyscannerService skyscannerService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Scoring weights - these three must add up to 1.0
     private static final double WEIGHT_RELIABILITY = 0.5;
     private static final double WEIGHT_PRICE       = 0.3;
     private static final double WEIGHT_DURATION    = 0.2;
@@ -39,7 +38,6 @@ public class FlightScoreService {
 
             ArrayNode results = objectMapper.createArrayNode();
 
-            // Find max price across all flights for normalization
             double maxPrice = 1.0;
             double[] prices = new double[flights.size()];
             for (int i = 0; i < flights.size(); i++) {
@@ -51,49 +49,40 @@ public class FlightScoreService {
                 if (prices[i] > maxPrice) maxPrice = prices[i];
             }
 
-            // Build scored result for each flight
             for (int i = 0; i < flights.size(); i++) {
                 JsonNode flight = flights.get(i);
 
-                String flightIata   = flight.path("flight").path("iata").asText();
-                String airlineName  = flight.path("airline").path("name").asText();
-                String depIata      = flight.path("departure").path("iata").asText();
-                String arrIata      = flight.path("arrival").path("iata").asText();
-                String depTime      = flight.path("departure").path("scheduled").asText();
-                String arrTime      = flight.path("arrival").path("scheduled").asText();
-                String status       = flight.path("flight_status").asText();
+                String flightIata  = flight.path("flight").path("iata").asText();
+                String airlineName = flight.path("airline").path("name").asText();
+                String depIata     = flight.path("departure").path("iata").asText();
+                String arrIata     = flight.path("arrival").path("iata").asText();
+                String depTime     = flight.path("departure").path("scheduled").asText();
+                String arrTime     = flight.path("arrival").path("scheduled").asText();
+                String status      = flight.path("flight_status").asText();
 
-                // Strip numbers from flight code to get carrier: "DL401" -> "DL"
-                String carrierCode = flightIata.replaceAll("[^A-Za-z]", "");
+                String carrierCode = flightIata.length() >= 2 ? flightIata.substring(0, 2) : flightIata;
 
-                // Look up historical on-time rate from BTS database
+                java.util.Set<String> usCarriers = java.util.Set.of("AA", "DL", "UA", "WN", "B6", "AS", "F9", "NK", "G4", "SY", "MQ", "OO", "YX", "9E");
+                if (!usCarriers.contains(carrierCode)) {
+                    continue;
+                }
+
                 double onTimeRate = getOnTimeRate(carrierCode, depIata);
-
-                // Get price
                 double price = prices[i];
-
-                // Calculate duration in minutes
                 double durationMinutes = calculateDuration(depTime, arrTime);
 
-                // Normalize scores to 0-1 range
-                // Price: cheaper = higher score
                 double priceScore = maxPrice > 0 ? 1.0 - (price / (maxPrice * 1.2)) : 0.5;
-
-                // Duration: shorter = higher score (normalize against 600 min / 10 hrs max)
                 double durationScore = durationMinutes > 0
                     ? Math.max(0, 1.0 - (durationMinutes / 600.0))
                     : 0.5;
 
-                // Final weighted score
-                double score = (onTimeRate    * WEIGHT_RELIABILITY)
-                             + (priceScore    * WEIGHT_PRICE)
+                double score = (onTimeRate   * WEIGHT_RELIABILITY)
+                             + (priceScore   * WEIGHT_PRICE)
                              + (durationScore * WEIGHT_DURATION);
 
-                // Round to 2 decimal places for cleanliness
-                score    = Math.round(score    * 100.0) / 100.0;
-                onTimeRate = Math.round(onTimeRate * 100.0) / 100.0;
+                score      = Math.round(score      * 100.0) / 100.0;
+                onTimeRate = Math.round(onTimeRate  * 100.0) / 100.0;
 
-                // Build the combined result object
                 ObjectNode result = objectMapper.createObjectNode();
                 result.put("flight",        flightIata);
                 result.put("airline",       airlineName);
@@ -110,10 +99,7 @@ public class FlightScoreService {
                 results.add(result);
             }
 
-            // Sort by score descending - best flights first
-            results.elements();
             ArrayNode sorted = sortByScore(results);
-
             return objectMapper.writeValueAsString(sorted);
 
         } catch (Exception e) {
@@ -121,34 +107,28 @@ public class FlightScoreService {
         }
     }
 
-    // Look up on-time rate from BTS database by carrier + departure airport
     private double getOnTimeRate(String carrier, String airport) {
         List<FlightReliability> records =
             reliabilityRepo.findByCarrierAndAirport(carrier, airport);
         if (records.isEmpty()) {
-            return 0.75; // default if no historical data found
+            return 0.75;
         }
-        // Average across all months in the database
         return records.stream()
             .mapToDouble(FlightReliability::getOnTimeRate)
             .average()
             .orElse(0.75);
     }
 
-    // Calculate flight duration in minutes from ISO datetime strings
     private double calculateDuration(String depTime, String arrTime) {
         try {
-            java.time.LocalDateTime dep =
-                java.time.LocalDateTime.parse(depTime);
-            java.time.LocalDateTime arr =
-                java.time.LocalDateTime.parse(arrTime);
+            java.time.OffsetDateTime dep = java.time.OffsetDateTime.parse(depTime);
+            java.time.OffsetDateTime arr = java.time.OffsetDateTime.parse(arrTime);
             return java.time.Duration.between(dep, arr).toMinutes();
         } catch (Exception e) {
-            return 180; // default 3 hours if parsing fails
+            return 180;
         }
     }
 
-    // Sort ArrayNode by score field descending
     private ArrayNode sortByScore(ArrayNode array) {
         java.util.List<JsonNode> list = new java.util.ArrayList<>();
         array.forEach(list::add);
