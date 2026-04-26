@@ -108,8 +108,7 @@ public class FlightScoreService {
     }
 
     private double getOnTimeRate(String carrier, String airport) {
-        List<FlightReliability> records =
-            reliabilityRepo.findByCarrierAndAirport(carrier, airport);
+        List<FlightReliability> records = reliabilityRepo.findByCarrierAndAirport(carrier, airport);
         if (records.isEmpty()) {
             return 0.75;
         }

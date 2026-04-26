@@ -116,7 +116,7 @@ export default {
       const date = this.flight.departureTime
         ? new Date(this.flight.departureTime).toISOString().split('T')[0]
         : ''
-      return `https://www.google.com/travel/flights/search?tfs=CBwQAhoeEgoyMDI2LTA0LTA4agcIARIDQVRMcgcIARIDT1JE`
+      return `https://www.google.com/travel/flights/search?q=flights+from+${dep}+to+${arr}+on+${date}`
     }
   },
   methods: {
