@@ -32,9 +32,9 @@ public class HomeController {
     // Returns live flights enriched with price, on-time rate and score
     @GetMapping("/api/liveFlights")
     public String getLiveFlights(
-            @RequestParam(defaultValue = "LAX") String dep,
-            @RequestParam(defaultValue = "JFK") String arr) {
-        String rawFlights = aviationStackService.getFlights(dep, arr);
-        return flightScoreService.scoreFlight(rawFlights);
+            @RequestParam(defaultValue = "ATL") String dep,
+            @RequestParam(defaultValue = "ORD") String arr,
+            @RequestParam(defaultValue = "") String date) {
+        return flightScoreService.scoreFlight(dep, arr, date);
     }
-}
+    }

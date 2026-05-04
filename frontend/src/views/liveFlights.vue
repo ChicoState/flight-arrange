@@ -6,6 +6,7 @@
     <div class="form">
       <input v-model="dep" placeholder="From (e.g. ATL)" />
       <input v-model="arr" placeholder="To (e.g. ORD)" />
+      <input v-model="date" type="date" />
       <input v-model="maxPrice" placeholder="Max budget (e.g. 500)" type="number" />
       <select v-model="maxLayovers">
         <option value="">Any layovers</option>
@@ -26,6 +27,7 @@
           <th>Departure</th>
           <th>Arrival</th>
           <th>Duration</th>
+          <th>Layovers</th>
           <th>Price</th>
           <th>On-Time</th>
           <th>Score</th>
@@ -40,6 +42,7 @@
           <td>{{ formatTime(flight.departureTime) }}</td>
           <td>{{ formatTime(flight.arrivalTime) }}</td>
           <td>{{ formatDuration(flight.durationMins) }}</td>
+          <td>{{ flight.layovers === 0 ? 'Non-stop' : flight.layovers + ' stop(s)' }}</td>
           <td>${{ flight.price }}</td>
           <td>{{ (flight.onTimeRate * 100).toFixed(0) }}%</td>
           <td>
@@ -68,6 +71,7 @@ export default {
     return {
       dep: '',
       arr: '',
+      date: '',
       maxPrice: '',
       maxLayovers: '',
       flights: [],
@@ -84,7 +88,7 @@ export default {
   methods: {
     async getLiveFlights() {
       try {
-        const response = await fetch(`/api/liveFlights?dep=${this.dep}&arr=${this.arr}`)
+        const response = await fetch(`/api/liveFlights?dep=${this.dep}&arr=${this.arr}&date=${this.date}`)
         const data = await response.json()
         this.searched = true
         this.flights = Array.isArray(data) ? data : []
@@ -109,6 +113,7 @@ export default {
           onTimeRate:    flight.onTimeRate,
           score:         flight.score,
           durationMins:  flight.durationMins,
+          layovers:      flight.layovers,
           status:        flight.status
         }
       })
