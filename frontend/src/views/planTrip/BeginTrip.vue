@@ -9,7 +9,7 @@
         <input v-model="dateFrom" type="date" />
         <input v-model="dateTo" type="date" />
       </div>
-      <button :disabled="!destination.trim()" @click="step = 2">Next →</button>
+      <button @click="handleNext">Next →</button>
     </div>
 
     <div v-if="step === 2" class="step">
@@ -93,18 +93,25 @@
   <button @click="step = 1">Start Over</button>
 </div>
 
-    <div v-if="showModal" class="overlay" @click.self="showModal = false">
-      <div class="modal">
-        <h2>Add a traveler</h2>
-        <input v-model="form.name" type="text" placeholder="Name" />
-        <input v-model="form.phone" type="tel" placeholder="Phone" />
-        <input v-model="form.email" type="email" placeholder="Email" />
-        <div class="modal-actions">
-          <button class="secondary" @click="showModal = false">Cancel</button>
-          <button @click="addCompanion">Add</button>
-        </div>
-      </div>
+<div v-if="showModal" class="overlay" @click.self="closeModal">
+  <div class="modal">
+    <h2>Add a traveler</h2>
+
+    <input v-model="form.name" type="text" placeholder="Name" />
+    <small v-if="formErrors.name">{{ formErrors.name }}</small>
+
+    <input v-model="form.phone" type="tel" placeholder="Phone" />
+    <small v-if="formErrors.phone">{{ formErrors.phone }}</small>
+
+    <input v-model="form.email" type="email" placeholder="Email" />
+    <small v-if="formErrors.email">{{ formErrors.email }}</small>
+
+    <div class="modal-actions">
+      <button class="secondary" @click="closeModal">Cancel</button>
+      <button @click="addCompanion">Add</button>
     </div>
+  </div>
+</div>
 
     
 
@@ -117,10 +124,12 @@ export default {
   data() {
     return {
       step: 1,
+      starterLo: '',
       destination: '',
       companions: [],
       showModal: false,
       form: { name: '', phone: '', email: '' },
+      formErrors: { name: '', phone: '', email: '' },
       dateFrom: '',
       dateTo: '',
       topics: [
@@ -136,9 +145,31 @@ export default {
   },
   methods: {
     addCompanion() {
-      if (!this.form.name.trim()) return
+      this.formErrors = { name: '', phone: '', email: '' }
+
+      if (!this.form.name.trim()) this.formErrors.name = 'Name is required'
+      if (!this.form.phone.trim()) this.formErrors.phone = 'Phone is required'
+      if (!this.form.email.trim()) this.formErrors.email = 'Email is required'
+
+      if (this.form.phone && !/^\d{10}$/.test(this.form.phone.trim())) {
+        this.formErrors.phone = 'Use 10 digits' // expects standard 10 digit phone #
+      }
+
+      if (this.form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.form.email.trim())) {
+        this.formErrors.email = 'Invalid email' // expects something@email.somethingelse
+      }
+
+      if (this.formErrors.name || this.formErrors.phone || this.formErrors.email) return
+
       this.companions.push({ ...this.form })
       this.form = { name: '', phone: '', email: '' }
+      this.formErrors = { name: '', phone: '', email: '' }
+      this.showModal = false
+    },
+
+    closeModal() {
+      this.form = { name: '', phone: '', email: '' }
+      this.formErrors = { name: '', phone: '', email: '' }
       this.showModal = false
     },
     async getFlightInfo() {
@@ -159,9 +190,47 @@ export default {
     this.flightInfo = data
     this.loading = false
     this.step = 5;
-  }
-    
   },
+    handleNext() {
+      if (!this.starterLo.trim()) {
+        alert('Please enter a starting location.')
+        return
+      }
+
+      if (!this.destination.trim()) {
+        alert('Please enter a destination.')
+        return
+      }
+
+      if (!this.dateFrom) {
+        alert('Please enter a departure date.')
+        return
+      }
+
+      if (!this.dateTo) {
+        alert('Please enter a return date.')
+        return
+      }
+
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const fromDate = new Date(this.dateFrom + 'T00:00:00')
+      const toDate = new Date(this.dateTo + 'T00:00:00')
+
+      if (fromDate < today) {
+        alert('Departure date cannot be in the past.')
+        return
+      }
+
+      if (toDate <= fromDate) {
+        alert('Return date must be after departure date.')
+        return
+      }
+
+      this.step = 2
+    },
+  },
+    
   computed: {
   allRated() {
     return this.topics.every(t => t.rating > 0)
@@ -170,7 +239,8 @@ export default {
     if (!this.flightInfo) return []
     return Array.isArray(this.flightInfo) ? this.flightInfo : [this.flightInfo]
   }
-},
+
+  }
 }
 </script>
 
@@ -269,6 +339,12 @@ button:disabled { background: #ccc; cursor: not-allowed; }
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.modal small {
+  color: #777;
+  font-size: 0.75rem;
+  margin-top: -0.5rem;
 }
 
 .date-row {
