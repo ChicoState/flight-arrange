@@ -126,22 +126,28 @@
       </div>
     </div>
 
-    <div v-if="showModal" class="overlay" @click.self="showModal = false">
-      <div class="modal">
-        <h2>Add a traveler</h2>
+<div v-if="showModal" class="overlay" @click.self="closeModal">
+  <div class="modal">
+    <h2>Add a traveler</h2>
 
-        <input v-model="form.name" placeholder="Name" />
-        <input v-model="form.phone" placeholder="Phone" />
-        <input v-model="form.email" placeholder="Email" />
+    <input v-model="form.name" type="text" placeholder="Name" />
+    <small v-if="formErrors.name">{{ formErrors.name }}</small>
 
-        <p v-if="modalError" class="modal-error">{{ modalError }}</p>
+    <input v-model="form.phone" type="tel" placeholder="Phone" />
+    <small v-if="formErrors.phone">{{ formErrors.phone }}</small>
 
-        <div class="modal-actions">
-          <button @click="showModal = false">Cancel</button>
-          <button @click="addCompanion">Add</button>
-        </div>
-      </div>
+    <input v-model="form.email" type="email" placeholder="Email" />
+    <small v-if="formErrors.email">{{ formErrors.email }}</small>
+
+    <div class="modal-actions">
+      <button class="secondary" @click="closeModal">Cancel</button>
+      <button @click="addCompanion">Add</button>
     </div>
+  </div>
+</div>
+
+    
+
   </div>
 </template>
 
@@ -167,6 +173,11 @@ export default {
         phone: "",
         email: ""
       },
+      formErrors: {
+        name: "",
+        phone: "",
+        email: ""
+      },
       topics: [
         { id: 1, label: "Price", rating: 0, hover: 0 },
         { id: 2, label: "On-Time Reliability", rating: 0, hover: 0 },
@@ -175,124 +186,105 @@ export default {
       ]
     };
   },
-
-  computed: {
-    allRated() {
-      return this.topics.every((t) => t.rating > 0);
-    },
-
-    hasCompanions() {
-      return this.companions.length > 0;
-    },
-
-    today() {
-      const d = new Date();
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      const dd = String(d.getDate()).padStart(2, "0");
-      return `${yyyy}-${mm}-${dd}`;
-    },
-
-    canProceedStep1() {
-      const base =
-        this.starterLo.trim() !== "" &&
-        this.destination.trim() !== "" &&
-        this.dateFrom !== "";
-
-      if (this.oneWay) return base;
-
-      return base && this.dateTo !== "";
-    }
-  },
-
   methods: {
     addCompanion() {
-      const validation = this.validateCompanion(this.form);
+      this.formErrors = { name: '', phone: '', email: '' }
 
-      if (!validation.ok) {
-        this.modalError = validation.message;
-        return;
+      if (!this.form.name.trim()) this.formErrors.name = 'Name is required'
+      if (!this.form.phone.trim()) this.formErrors.phone = 'Phone is required'
+      if (!this.form.email.trim()) this.formErrors.email = 'Email is required'
+
+      if (this.form.phone && !/^\d{10}$/.test(this.form.phone.trim())) {
+        this.formErrors.phone = 'Use 10 digits' // expects standard 10 digit phone #
       }
 
-      this.companions.push({
-        name: validation.name,
-        phone: validation.phone,
-        email: validation.email
-      });
+      if (this.form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.form.email.trim())) {
+        this.formErrors.email = 'Invalid email' // expects something@email.somethingelse
+      }
 
-      this.form = { name: "", phone: "", email: "" };
-      this.modalError = "";
-      this.showModal = false;
+      if (this.formErrors.name || this.formErrors.phone || this.formErrors.email) return
+
+      this.companions.push({ ...this.form })
+      this.form = { name: '', phone: '', email: '' }
+      this.formErrors = { name: '', phone: '', email: '' }
+      this.showModal = false
     },
 
-    removeCompanion(index) {
-      this.companions.splice(index, 1);
+    closeModal() {
+      this.form = { name: '', phone: '', email: '' }
+      this.formErrors = { name: '', phone: '', email: '' }
+      this.showModal = false
+    },
+    async getFlightInfo() {
+      this.loading = true
+      this.step = 4;
+      const response = await fetch('/api/flights')
+      const data = await response.json()
+      this.flightInfo = data
+      this.loading = false
+      this.step = 5;
     },
 
-    validateCompanion(form) {
-      const name = String(form.name || "").trim().replace(/\s+/g, " ");
-      const phoneRaw = String(form.phone || "").trim();
-      const email = String(form.email || "").trim();
-
-      if (!name) return { ok: false, message: "Name is required." };
-
-      const nameParts = name.split(" ").filter(Boolean);
-      if (nameParts.length < 2) {
-        return { ok: false, message: "Enter both a first and last name." };
+    async getLiveFlightInfo() {
+    this.loading = true
+    this.step = 4;
+    const response = await fetch('/api/liveFlights?dep=LAX&arr=JFK')
+    const data = await response.json()
+    this.flightInfo = data
+    this.loading = false
+    this.step = 5;
+  },
+    handleNext() {
+      if (!this.starterLo.trim()) {
+        alert('Please enter a starting location.')
+        return
       }
 
-      if (!/^[A-Za-z][A-Za-z'\-]*(\s+[A-Za-z][A-Za-z'\-]*)+$/.test(name)) {
-        return { ok: false, message: "Name must include a first and last name." };
+      if (!this.destination.trim()) {
+        alert('Please enter a destination.')
+        return
       }
 
-      if (!email || !email.includes("@") || !email.toLowerCase().endsWith(".com")) {
-        return { ok: false, message: "Email must include @ and end with .com." };
+      if (!this.dateFrom) {
+        alert('Please enter a departure date.')
+        return
       }
 
-      const digits = phoneRaw.replace(/\D/g, "");
-      const plusCount = (phoneRaw.match(/\+/g) || []).length;
-
-      if (plusCount > 1 || (phoneRaw.includes("+") && phoneRaw.indexOf("+") !== 0)) {
-        return { ok: false, message: "Phone number format is invalid." };
+      if (!this.dateTo) {
+        alert('Please enter a return date.')
+        return
       }
 
-      const digitCount = digits.length;
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const fromDate = new Date(this.dateFrom + 'T00:00:00')
+      const toDate = new Date(this.dateTo + 'T00:00:00')
 
-      if (phoneRaw.startsWith("+")) {
-        if (digitCount < 10 || digitCount > 13) {
-          return { ok: false, message: "International phone numbers must have 10 to 13 digits." };
-        }
-      } else {
-        if (digitCount !== 10) {
-          return {
-            ok: false,
-            message: "Phone number must have exactly 10 digits, or use + for international numbers."
-          };
-        }
+      if (fromDate < today) {
+        alert('Departure date cannot be in the past.')
+        return
       }
 
-      return { ok: true, name, phone: phoneRaw, email };
+      if (toDate <= fromDate) {
+        alert('Return date must be after departure date.')
+        return
+      }
+
+      this.step = 2
     },
-
-    goToFlights() {
-      if (!this.canProceedStep1) return;
-
-      this.$router.push({
-        path: "/live-flights",
-        query: {
-          dep: this.starterLo,
-          arr: this.destination,
-          oneWay: this.oneWay,
-          dateFrom: this.dateFrom,
-          dateTo: this.oneWay ? "" : this.dateTo,
-          outboundTiming: this.outboundTiming,
-          returnTiming: this.returnTiming,
-          ratings: JSON.stringify(this.topics)
-        }
-      });
-    }
+  },
+    
+  computed: {
+  allRated() {
+    return this.topics.every(t => t.rating > 0)
+  },
+  parsedFlights() {
+    if (!this.flightInfo) return []
+    return Array.isArray(this.flightInfo) ? this.flightInfo : [this.flightInfo]
   }
-};
+
+  }
+}
 </script>
 
 <style scoped>
@@ -480,6 +472,12 @@ button:disabled {
   align-items: center;
   gap: 8px;
   font-size: 14px;
+}
+
+.modal small {
+  color: #777;
+  font-size: 0.75rem;
+  margin-top: -0.5rem;
 }
 
 .date-row {
