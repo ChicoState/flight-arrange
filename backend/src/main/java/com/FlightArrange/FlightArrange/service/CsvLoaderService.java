@@ -14,7 +14,7 @@ public class CsvLoaderService implements CommandLineRunner {
     private final FlightReliabilityRepo repo;
 
     // *** SET THIS TO YOUR ACTUAL CSV PATH ***
-    private static final String CSV_PATH = "/home/ripra/CSCI_430/Flight_Arrange/Airline_Delay_Cause.csv";
+    private static final String CSV_PATH = "/Users/cjboyle/Desktop/Soft_Engi/ot_delaycause1_DL/Airline_Delay_Cause.csv";
 
     public CsvLoaderService(FlightReliabilityRepo repo) {
         this.repo = repo;
