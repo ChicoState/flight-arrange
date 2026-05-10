@@ -21,8 +21,8 @@ export default {
   },
   methods: {
     handleStart() {
-      this.$router.push('/planTrip/beginTrip') // switches view
-    },
+      this.$router.push('/planTrip/beginTrip')
+    }
   }
 }
 </script>

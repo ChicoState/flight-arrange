@@ -1,4 +1,4 @@
-package com.FlightArrange.FlightArrange;
+package com.FlightArrange.FlightArrange.controller;
 
 import com.FlightArrange.FlightArrange.model.FlightReliability;
 import com.FlightArrange.FlightArrange.repository.FlightReliabilityRepo;
