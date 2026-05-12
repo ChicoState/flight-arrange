@@ -1,0 +1,35 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: system-ui, sans-serif;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 360px;
+}
+
+.topic-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stars {
+  display: flex;
+  gap: 4px;
+}
+
+.star {
+  cursor: pointer;
+  font-size: 20px;
+  color: #ccc;
+}
+
+.star.filled {
+  color: #111;
+}
