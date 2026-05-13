@@ -1,17 +1,19 @@
 <template>
   <nav class="navbar navbar-dark bg-primary px-4" v-if="$route.path !== '/login'">
-    <span class="navbar-brand">Flight Wizard</span>
+    <span class="navbar-brand" @click="$router.push('/')" style="cursor:pointer">Flight Wizard</span>
     <div v-if="username" class="dropdown" ref="dropdown">
       <div class="d-flex align-items-center gap-2" @click="toggleDropdown" style="cursor:pointer">
         <i class="bi bi-person-circle fs-4 text-white"></i>
         <span class="text-white">{{ username }}</span>
         <i class="bi bi-chevron-down text-white" style="font-size:0.75rem"></i>
       </div>
-      <ul class="dropdown-menu dropdown-menu-end show" v-if="dropdownOpen">
-        <li><a class="dropdown-item" @click="goToAccount">Account Details</a></li>
-        <li><hr class="dropdown-divider"></li>
-        <li><a class="dropdown-item text-danger" @click="logout">Logout</a></li>
-      </ul>
+  <ul class="dropdown-menu dropdown-menu-end show" v-if="dropdownOpen">
+    <li><a class="dropdown-item" @click="goToAccount">Account Details</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" @click="$router.push('/user-trips')">My Trips</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item text-danger" @click="logout">Logout</a></li>
+  </ul>
     </div>
     <div v-else>
       <button class="btn btn-outline-light btn-sm" @click="$router.push('/login')">Login</button>

@@ -4,7 +4,7 @@
       <header class="hero">
         <div class="hero-copy">
           <p class="eyebrow">Flight Results</p>
-          <h1>{{ dep || "—" }} → {{ arr || "—" }}</h1>
+          <h1>{{ (dep || "—").toUpperCase() }} → {{ (arr || "—").toUpperCase() }}</h1>
 
           <p class="subtle">
             Ranked from price, reliability, flight duration, and nonstop fit, with historical route data influencing the result.
@@ -33,20 +33,20 @@
           </div>
         </div>
 
-        <div class="legend">
-          <div class="legend-item">
-            <span class="dot dot-green"></span>
-            Cheapest
-          </div>
-          <div class="legend-item">
-            <span class="dot dot-yellow"></span>
-            Most balanced
-          </div>
-          <div class="legend-item">
-            <span class="dot dot-blue"></span>
-            Strong historical fit
-          </div>
+      <div class="legend">
+        <div class="legend-item">
+          <span class="dot dot-green"></span>
+          High match
         </div>
+        <div class="legend-item">
+          <span class="dot dot-yellow"></span>
+          Moderate match
+        </div>
+        <div class="legend-item">
+          <span class="dot dot-blue"></span>
+          Low match
+        </div>
+      </div>
       </header>
 
       <section class="panel">
@@ -98,7 +98,7 @@
                     {{ flight.badge }}
                   </span>
                 </div>
-                <p class="route-line">{{ dep || "—" }} → {{ arr || "—" }}</p>
+                <p class="route-line">{{ (dep || "—").toUpperCase() }} → {{ (arr || "—").toUpperCase() }}</p>
               </div>
 
               <div class="price-box">
@@ -353,21 +353,22 @@ export default {
       const fastestName = [...enriched].sort((a, b) => b.durationScore - a.durationScore)[0]?.name;
       const mostDirectName = [...enriched].sort((a, b) => b.directScore - a.directScore)[0]?.name;
 
-      return sorted.map((flight, index) => ({
-        ...flight,
-        badge:
-          index === 0
-            ? "Top Pick"
-            : cheapestName && flight.name === cheapestName
-              ? "Cheapest"
-              : flight.name === mostReliableName
-                ? "Most Reliable"
-                : flight.name === fastestName
-                  ? "Fastest"
-                  : flight.name === mostDirectName
-                    ? "Most Direct"
-                    : "Best Value"
-      }));
+    return sorted.map((flight, index) => ({
+          ...flight,
+          tone: index === 0 ? "green" : index === 1 ? "yellow" : "blue",
+          badge:
+            index === 0
+              ? "Top Pick"
+              : cheapestName && flight.name === cheapestName
+                ? "Cheapest"
+                : flight.name === mostReliableName
+                  ? "Most Reliable"
+                  : flight.name === fastestName
+                    ? "Fastest"
+                    : flight.name === mostDirectName
+                      ? "Most Direct"
+                      : "Best Value"
+        }));
     }
   },
 
@@ -396,7 +397,7 @@ export default {
       if (value === "early") return "Early";
       if (value === "midday") return "Mid-day";
       if (value === "late") return "Late";
-      return "Don't care";
+      return "No preference";
     },
 
     importanceValue(rating) {

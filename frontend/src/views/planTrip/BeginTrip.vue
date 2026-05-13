@@ -33,17 +33,13 @@
 
       <p class="hint">Optional — you can skip this step</p>
 
-      <div v-for="(person, i) in companions" :key="i" class="companion-card">
-        <div class="companion-main">
-          <div class="companion-top">
-            <span class="companion-name">{{ person.name }}</span>
-            <button class="remove-btn" @click="removeCompanion(i)">Remove</button>
-          </div>
-          <span class="sub">
-            {{ person.email }} · {{ person.phone }}
-          </span>
-        </div>
+    <div v-for="(person, i) in companions" :key="i" class="companion-card">
+      <div class="companion-main">
+        <button class="remove-btn" @click="removeCompanion(i)">✕</button>
+        <span class="companion-name">{{ person.name }}</span>
+        <span class="sub">{{ person.email }} · {{ person.phone }}</span>
       </div>
+    </div>
 
       <button class="add-btn" @click="showModal = true">
         + Add traveler
@@ -102,7 +98,7 @@
               <option value="early">Early</option>
               <option value="midday">Mid-day</option>
               <option value="late">Late</option>
-              <option value="dontcare">Don't care</option>
+              <option value="nopreference">No preference</option>
             </select>
           </label>
 
@@ -112,7 +108,7 @@
               <option value="early">Early</option>
               <option value="midday">Mid-day</option>
               <option value="late">Late</option>
-              <option value="dontcare">Don't care</option>
+              <option value="nopreference">No preference</option>
             </select>
           </label>
         </div>
@@ -275,14 +271,66 @@ export default {
   },
     
   computed: {
-  allRated() {
-    return this.topics.every(t => t.rating > 0)
-  },
-  parsedFlights() {
-    if (!this.flightInfo) return []
-    return Array.isArray(this.flightInfo) ? this.flightInfo : [this.flightInfo]
-  }
+    allRated() {
+      return this.topics.every(t => t.rating > 0)
+    },
+    parsedFlights() {
+      if (!this.flightInfo) return []
+      return Array.isArray(this.flightInfo) ? this.flightInfo : [this.flightInfo]
+    },
+    hasCompanions() {
+      return this.companions.length > 0
+    },
+    today() {
+      const d = new Date()
+      const yyyy = d.getFullYear()
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      return `${yyyy}-${mm}-${dd}`
+    },
+    canProceedStep1() {
+      const base =
+        this.starterLo.trim() !== '' &&
+        this.destination.trim() !== '' &&
+        this.dateFrom !== ''
 
+      if (this.oneWay) return base
+      return base && this.dateTo !== ''
+    },
+    async goToFlights() {
+      if (!this.canProceedStep1) return
+
+      await fetch('/api/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: localStorage.getItem('username'),
+          dep: this.starterLo,
+          arr: this.destination,
+          oneWay: this.oneWay,
+          dateFrom: this.dateFrom,
+          dateTo: this.oneWay ? '' : this.dateTo,
+          outboundTiming: this.outboundTiming,
+          returnTiming: this.returnTiming,
+          ratings: this.topics,
+          companions: this.companions
+        })
+      })
+
+      this.$router.push({
+        path: '/live-flights',
+        query: {
+          dep: this.starterLo,
+          arr: this.destination,
+          oneWay: this.oneWay,
+          dateFrom: this.dateFrom,
+          dateTo: this.oneWay ? '' : this.dateTo,
+          outboundTiming: this.outboundTiming,
+          returnTiming: this.returnTiming,
+          ratings: JSON.stringify(this.topics)
+        }
+      })
+},
   }
 }
 </script>
@@ -504,5 +552,70 @@ button:disabled {
   .timing-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.companion-card {
+  position: relative;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.companion-main {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.companion-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.companion-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 0;
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sub {
+  font-size: 12px;
+  color: #666;
+}
+
+.step h1 {
+  text-align: center;
+}
+
+.hint {
+  text-align: center;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
 }
 </style>

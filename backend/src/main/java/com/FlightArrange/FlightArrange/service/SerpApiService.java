@@ -13,9 +13,9 @@ import java.util.List;
 public class SerpApiService {
 
     // *** TOGGLE THIS: false = mock data, true = real Serpapi call ***
-    private static final boolean USE_LIVE_DATA = false;
+    private static final boolean USE_LIVE_DATA = true;
 
-    @Value("${serpapi.api.key}")
+    @Value("ad415c9f68208ffcc8cee7b9b4ed9d5d949b7b49c73c10dfa9862150905584d1")
     private String apiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
