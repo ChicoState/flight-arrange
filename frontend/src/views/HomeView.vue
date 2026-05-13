@@ -19,7 +19,7 @@ export default {
   },
   methods: {
     handleStart() {
-      this.$router.push("/planTrip/beginTrip");
+      this.$router.push('/planTrip/beginTrip')
     }
   }
 };
