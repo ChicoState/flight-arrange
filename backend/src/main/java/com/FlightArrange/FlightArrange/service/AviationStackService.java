@@ -11,7 +11,7 @@ public class AviationStackService {
     // *** TOGGLE THIS: false = mock data (safe for dev), true = live API call ***
     private static final boolean USE_LIVE_DATA = false;
 
-    @Value("${aviationstack.api.key:e1e0213f1024268b8768de0cf7db9056}")
+    @Value("${aviationstack.api.key}")
     private String apiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -28,7 +28,7 @@ public class AviationStackService {
                 + "?access_key=" + apiKey
                 + "&dep_iata=" + depIata
                 + "&arr_iata=" + arrIata
-                + "&limit=10";
+                + "&limit=100";
 
         try {
             ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
